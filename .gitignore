@@ -1,1 +1,4 @@
-Git Ignore
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
