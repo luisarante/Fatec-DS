@@ -8,7 +8,7 @@
     # Ajustar comentário tools -> Global Option... -> code -> sotf-wrap 
 
 # -----------------------------------------------------------------
-# Importar dados 
+# Importar dados *
 # -----------------------------------------------------------------
 
 # Baixar pacote caso não tenha baixado 
