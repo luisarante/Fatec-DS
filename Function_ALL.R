@@ -1,43 +1,47 @@
-############################  Carrega funções ############################### 
-#############################################################################
 
-###################Função configs - configurações############################
+#______________________________  Carrega funções ____________________________________________________________ 
+
 configs <- function() {
-  diretorio <- 'C:/Users/carlo/Desktop/RProjet_workspace/Fatec-DS'
-  municipio <- "Ilhabela"
-  
-   #localização das Bases 2008-2024
-   Rec_loc_ate_2024 <- paste0("C:/Users/carlo/Desktop/RProjet_workspace_Observatorio_ODS_LN_2024/Bkp_orcamento/", "Despesas-",  municipio, "-bkp-2008-2024.xlsx")
-   Des_loc_ate_2024 <- paste0("C:/Users/carlo/Desktop/RProjet_workspace_Observatorio_ODS_LN_2024/Bkp_orcamento/", "Reeitas-",  municipio, "-bkp-2008-2024.xlsx")
-  
-  setwd(diretorio) #define workspace directory 
-  getwd()
-  
-# lista_mun_rmvale <- read_xlsx("Lista_de_municipios_RM_Vale.xlsx")  # 39 municipios da RM_Vale 
-# lista_municipios <- lista_mun_rmvale$nm_municipio                  # default = 39 municipios da rmvale
 
-  } # FUNÇÃO: configs (configurações)
+    library(readxl)
+    library(dplyr)
+    diretorio <- getwd()
+    
+   #localização das Bases históricas caso deseja-se juntar com a atual
+   dir_desp_ate2024 <- paste0(diretorio,"/Orçamento_Publico/Despesas-LN-2008-atual.xlsx")
+   dir_rec_ate2024  <- paste0(diretorio,"/Orçamento_Publico/Receitas-LN-2008-atual.xlsx")
+   
+  
+   ### Define municipios de interesse            
+   dir_rmvale <- paste0(diretorio,"/Tabelas/Municipios_RMVale.xlsx")
+   lista_mun_rmvale <- read_excel(
+                       path =  dir_rmvale,
+                       sheet = "municipios_rmvale" ) # 39 municipios da RM_Vale
+   
+   lista_mun_rmvale <- lista_mun_rmvale |> 
+                       filter(CD_SUB_REG == "SR5")
+   
+   lista_municipios <- lista_mun_rmvale$nm_mun       # separa apenas o nome do Municipio minusculo
 
-# Calcula o valor moda de um vetor (valor que mais aparece)
-calc_moda <-  function(x) {
-  z = table(as.vector(x)) 
-  names(z)[z == max(z)] 
-  }
-
-##############Função load_packages - Carrega todos os pacotes#################
+  } #  FUNÇÃO: configs (configurações)
+#______________________________________________________________________________________________________________
 load_packages <- function() {
   
+  install.packages(c('readxl', 'dplyr'))  # pacotes minimos para executar a função
   library('readxl')
   library('dplyr')
   
   pacotes_df <- read_xlsx("Tabelas/pacotes.xlsx")    #le planilha de pacotes e grava data frame
   pacotes_df <- filter(pacotes_df, carregar == "S")
-  pacotes <- as.vector( pacotes_df$pacote)
+  pacotes    <- as.vector( pacotes_df$pacote)
+  
+  pacotes_df$carregar
+  
   
   print (pacotes)
   
-  if(sum(as.numeric(!pacotes %in% installed.packages())) != 0){
-    instalador <- pacotes[!pacotes %in% installed.packages()]
+  if(sum(as.numeric(!pacotes %in% installed.packages())) != 0){ # retorna matriz pacotes ja instalados
+    instalador <- pacotes[!pacotes %in% installed.packages()]   # isola os pacotes não instalados 
     for(i in 1:length(instalador)) {
       install.packages(instalador, dependencies = T)
       break()}
@@ -46,19 +50,20 @@ load_packages <- function() {
     sapply(pacotes, require, character = T)  # opção: lapply(carregar, require, character.only = TRUE)   
   }
   
-  y# O pacote rayshader que está no CRAN, no momento, possui alguns bugs. A versão
-  # que está no GitHub do autor do pacote já é mais funcional. 
-  # Para instalá-la: (responder 3 na console)
+  # Observação:
+  # O pacote rayshader que está no CRAN, no momento, possui alguns bugs. 
+  # A versão que está no GitHub do autor do pacote já é mais funcional. Para instalá-la: (responder 3 na console)
   # devtools::install_github("tylermorganwall/rayshader")  #(só a primeira vez)
-  
   # Para carregar o rayshader  (faz graficos tridimensionais - barras sobre o mapa)
   # library(rayshader)
   
 } # FUNÇÃO: carrega pacotes
-
-############# FUNÇÃO: rm_accents - Remove acentuações #########################
+#______________________________________________________________________________________________________________
 rm_accent <- function(str,pattern="all") {
-  # FUNÇÃO: rm_accent - Remove acentuações e pontuações de palavras ou frases
+  # FUNÇÃO: rm_accent - Remove acentuações
+  # Rotinas e funções úteis V 1.0
+  # rm.accent - REMOVE ACENTOS DE PALAVRAS
+  # Função que tira todos os acentos e pontuações de um vetor de strings.
   # Parâmetros:
   # str - vetor de strings que terão seus acentos retirados.
   # patterns - vetor de strings com um ou mais elementos indicando quais acentos deverão ser retirados.
@@ -101,67 +106,37 @@ rm_accent <- function(str,pattern="all") {
   
   return(str)
 }  # FUNÇÃO: rm_accents - Remove acentuações
-
-
-#### FUNÇÃO: std_str - Standardização (retirada de caracteres especiais, numeros e uppercase)#
+#______________________________________________________________________________________________________________
 std_str <- function(str2) {
   # FUNÇÃO std_str - Padronização dos caracteres
-  
   str2 <- tolower(str2)                             # coloca tudo em lowercase - para Uppercase seria toupper(str_origem) 
   str2 <- rm_accent(str2)                           # Remove todas acentuações 
   str2 <- str_replace_all(str2, "[^[:alnum:]]", "") # remove non alphanumeric characters
   return(str2)
 } # FUNÇÃO: std_str - Padronização dos caracteres especiais, uppercase, etc.
-
-
-#### Função: Standardização do histórico das despesas ##########################
-#####(retirada de caracteres especiais, numeros e uppercase)####################
-### Tem como entrada o dsname que é um dataset de despesas a ser padronizado ###
-std_histdesp <- function(dsname) {
-  pasta <- getwd()
-  # Lê o arquivo de dsname (despesas a ser trabalhado)
-  dsname     <- paste0(pasta, "/Bkp_orcamento/Despesas-Ubatuba-bkp-2008-2024.xlsx")
-  despesas_f <- read_xlsx(dsname) # opcional para alterar direto no arquivo xlsx
-  
-  
-  # Colunas
-  #23 W  - historico_despesa
-  #24 X  - historico_std
-  #25 Y  - categoria
-  #26 W  - subcategoria
-  #27 AA - eventos
-  #28 AB - Seleção
-  #29 AC - OTMU
- 
-  # Executa função de padronização (retorna msg de erro mas executa a função)
-  
-  despesas_f$historico_std <- tolower(despesas_f$`Histórico da despesa`)    # coloca tudo em lowercase - para Uppercase seria toupper(str_origem) 
-  despesas_f$historico_std <- rm_accent(despesas_f$historico_std)      # Remove todas acentuações                           
-  despesas_f$historico_std <- str_replace_all(despesas_f$historico_std, "[^[:alnum:]]", "")  # remove non alphanumeric characters                 
-  
-  despesas_f <-data.frame(despesas_f)
-  
- # save(despesas_f, file = "Despesas_municipios.Rdata") # Salva em formato RData
-  
-  write.xlsx(despesas_f, "Despesas_std.xlsx") #grava data frame em formato *.xlsx
-  
-  
-  return()
-} # FUNÇÃO: std_histdesp -  Standardização do historico das despesas
-
-
-############ Função Download Receitas do TCE  - municípios da lista_mun_minusculas ###########
-##### Tem como parametros de entrada, os anos a serem baixados e lista de municipios #########
+#______________________________________________________________________________________________________________
 download_receitas <- function(anos_f, lista_municipios_f) {
-  library('xlsx')
-  tipo = "receitas"
-  receitas_acum <- read.csv(file = "receitas_vazia.csv", sep = ";", header = T, encoding = "latin1")
-  # receitas_acum <- read_xlsx("Receitas-municipio-2008-2023.xlsx") # opção de juntar antigo 
-  # anos_f <- c("2020","2021")
-  # lista_municipios_f <- c("sao-jose-dos-campos")
+
+    library(readxl)
+    library(writexl)
+    #anos_f             <- "2025"
+    #lista_municipios_f <- "ilhabela"
+    tipo                <- "receitas"
+    diretorio           <- getwd()
   
-  for(ano in anos_f) {
+    # cria um arquivo vazio para acumular os arquivos baixados
+    receitas_acum <- read.csv(file = "Orçamento_Publico/receitas_vazia.csv", 
+                              sep = ";", 
+                              header = TRUE,
+                              encoding = "latin1" )
     
+    # caso deseje juntar com o arquivo historico, descomentariar as 2 linhas abaixo  
+    # dir_rec_ate2024  <- paste0(diretorio,"/Orçamento_Publico/Receitas-LN-2014-atual.xlsx")
+    # receitas_acum    <- read_xlsx(dir_rec_ate2024) # opção de juntar antigo 
+  
+  
+  for(ano in anos_f) { #Looping para baixar todos os anos e municipios recebidos no argumento da função
+     
     for(mun in lista_municipios_f) {
       
       print (paste("baixando", tipo, "de:", mun, "ano:", ano))
@@ -175,13 +150,13 @@ download_receitas <- function(anos_f, lista_municipios_f) {
       download.file(url_baixar, df_name_zip)               #traz para meu diretorio (vem zipado)
       unzip(df_name_zip, files = df_name_csv)              #Unzipa           
       
+      #remove arquivos temporários
       file.remove(df_name_zip)
-      #file.remove(df_name_pasta)
+      file.remove(df_name_pasta)
       
       receitas <- read.csv(file = df_name_csv, sep = ";", header = T, 
                            encoding = "latin1",dec = ",")
-      receitas$dt_atlz    <- ''
-      receitas$categoria  <- ''
+      receitas$categoria  <- ''   #Cria nova coluna Categoria
       
       receitas_acum <- rbind.data.frame(receitas_acum, receitas)
       
@@ -191,7 +166,7 @@ download_receitas <- function(anos_f, lista_municipios_f) {
     }  # Fim do loop de município  
   }  # Fim do loop de ano
   
-  colnames(receitas_acum) <- 
+  colnames(receitas_acum) <-    #Rename nas colunas para terem nomes mais compreensíveis
     c('Identificação da Receita',	
       'Ano',	
       'Municipio',	
@@ -207,64 +182,84 @@ download_receitas <- function(anos_f, lista_municipios_f) {
       'Fonte',	
       'Rubrica',	
       'Alínea',	
-      'Sub Alínea',	
+      'Sub Alínea',
+      'tipo',
       'Valor arrecadacao',
-      'Data Atualização',
       'Categoria'
     )
+  	
+  dsname_Rdata <- paste(tipo, "-", mun, "-", ano, ".Rdata",sep = "")
+  save(despesas_acum, file = dsname_Rdata) # grava resultado em formato RData
   
-  # save(receitas_acum, file = "Receitas_municipios.Rdata") # grava resultado em formato RData
+  dsname_xlsx <- paste(tipo, "-", mun, "-", ano, ".xlsx",sep = "")
+  write_xlsx(receitas_acum, dsname_xlsx) #grava data frame em formato *.xlsx
   
-  write.xlsx(receitas_acum, "Receitas_municipios.xlsx") #grava data frame em formato *.xlsx
-  
-} # FUNÇÃO download_receitas TCE
-
-
-############ Função Download Despesas do TCE  - municípios da lista_mun_minusculas ###########
-##### Tem como parametros de entrada, os anos a serem baixados e lista de municipios #########
+} # FUNÇÃO download_receitas do TCE  - municípios da lista_mun_minusculas
+#______________________________________________________________________________________________________________
 download_despesas <- function(anos_f, lista_municipios_f) {
-  
-  # FUNÇÃO: Baixar DESPESAS dos municípios da lista_mun_minusculas ########################## 
  
- # library('xlsx')
-  tipo = "despesas"
- 
-  despesas_acum <- read.csv(file = "despesas_vazia.csv", sep = ";", header = T, encoding = "latin1")
-  # despesas_acum <- read_xlsx("Despesas-municipio_2008-2023.xlsx") # opção para juntar base antiga
+  library(readxl)
+  library(writexl)
+  library(dplyr)
+  library(stringr)
   
-  # anos_f <- c("2020","2021")
-  # lista_municipios_f <- c("sao-jose-dos-campos")
+  #anos_f             <- "2025"
+  #lista_municipios_f <- "ilhabela"
+  tipo                <- "despesas"
+  diretorio           <- getwd()
   
+  #cria um arquivo vazio para acumular os arquivos baixados
+   despesas_acum <- read.csv(file = "Orçamento_Publico/despesas_vazia.csv", 
+                            sep = ";", 
+                            header = T, 
+                            encoding = "latin1")
+   
+   {
+     # caso deseje juntar com o arquivo historico, descomentariar as linhas abaixo  
+     # dir_desp_ate2024 <- paste0(diretorio,"/Orçamento_Publico/Despesas-LN-2014-atual.xlsx")
+     # despesas_hist <- read_excel(
+     #                  path =  dir_desp_ate2024,
+     #                  sheet = "Despesas_Ilhabela_2014-2024"  )  # Substitua pelo nome da planilha
+   } # Opção A: Ler pelo NOME da planilha - histórico das despesas
+   
+   
   for(ano in anos_f) {
     
     for(mun in lista_municipios_f) {
       
       print (paste("baixando", tipo, "de:", mun, "ano:", ano))
       
-      url_baixar <- paste("https://transparencia.tce.sp.gov.br/sites/default/files/csv/", tipo, "-", mun, "-", ano, ".zip",sep = "")
-      
       df_name_zip   <- paste(tipo, "-", mun, "-", ano, ".zip",sep = "")
       df_name_csv   <- paste(tipo, "-", mun, "-", ano, ".csv",sep = "")
       df_name_pasta <- paste(tipo, "-", mun, "-", ano,        sep = "")
       
-      download.file(url_baixar, df_name_zip)               #traz para meu diretorio (vem zipado)
-      unzip(df_name_zip, files = df_name_csv)              #Unzipa           
+      url_baixar <- paste("https://transparencia.tce.sp.gov.br/sites/default/files/csv/", tipo, "-", mun, "-", ano, ".zip",sep = "")
+      
+      download.file(url_baixar, 
+                    destfile = df_name_zip,
+                    mode = "wb")               #traz para meu diretorio (vem zipado)
+      
+            unzip(zipfile = df_name_zip,     #Unzipa   
+            # files = df_name_csv, 
+            exdir = ".")
       
       file.remove(df_name_zip)
       
-      file.remove(df_name_pasta)
+      # file.remove(df_name_pasta)
       
-      despesas <- read.csv(file = df_name_csv, sep = ";", header = T, 
-                           encoding = "latin1", dec = ",")
+      despesas <- read.csv(file = df_name_csv, 
+                           sep = ";", 
+                           header = T, 
+                           encoding = "latin1", 
+                           dec = ",")
       
       # Cria Novas Colunas
-      despesas$historico_std     <- ''
-      despesas$categoria         <- ''
-      despesas$subcategoria      <- ''
-      despesas$eventos           <- ''
-      despesas$selecao           <- ''
-      despesas$otmu              <- ''
-      
+        despesas$historico_std     <- ''
+        despesas$categoria         <- ''
+        despesas$subcategoria      <- ''
+        despesas$eventos           <- ''
+        despesas$selecao           <- ''
+        despesas$otmu              <- ''
       
       despesas_vl <- dplyr::filter(despesas, tp_despesa == "Valor Liquidado")
       
@@ -277,83 +272,43 @@ download_despesas <- function(anos_f, lista_municipios_f) {
     }  # Fim do loop de município  
   }  # Fim do loop de ano
   
-  # colnames(despesas_acum) <- c('identificação da despesa detalhe',
-  #                               'ano exercicio',
-  #                               'municipio',
-  #                               'Orgão',
-  #                               'mês',
-  #                               'mês extenso',
-  #                               'tipo despesa',	
-  #                               'Num. Empenho (interno)',	
-  #                               'identificador despesa',
-  #                               'destino da despesa (Fornecedor)',
-  #                               'data emissao despesa',
-  #                               'Valor',
-  #                               'funcao de governo',
-  #                               'subfuncao governo',
-  #                               'codigo do programa',
-  #                               'descrição do programa',	
-  #                               'cód Ação',	
-  #                               'descrição da acao',	
-  #                               'Fonte de Recurso',	
-  #                               'código da aplicacao fixo',	
-  #                               'modalidade de licitação',
-  #                               'Categoria Econômica e Descrição  da Despesa',	
-  #                               'Histórico da despesa',
-  #                               'historico_std',
-  #                               'categoria',
-  #                               'sub_categoria',
-  #                               'eventos',
-  #                               'selecão',
-  #                               'otmu')
+  despesas_acum$historico_std <- std_str(despesas_acum$historico_despesa) # cria campo histórico padronizado (sem acentuação)
+   
+  colnames(despesas_acum) <- c('identificação da despesa detalhe',
+                               'ano exercicio',
+                               'municipio',
+                               'Orgão',
+                               'mês',
+                               'mês extenso',
+                               'tipo despesa',	
+                               'Num. Empenho (interno)',	
+                               'identificador despesa',
+                               'destino da despesa (Fornecedor)',
+                               'data emissao despesa',
+                               'Valor',
+                               'funcao de governo',
+                               'subfuncao governo',
+                               'codigo do programa',
+                               'descrição do programa',	
+                               'cód Ação',	
+                               'descrição da acao',	
+                               'Fonte de Recurso',	
+                               'código da aplicacao fixo',	
+                               'modalidade de licitação',
+                               'Categoria Econômica e Descrição  da Despesa',	
+                               'Histórico da despesa',
+                               'historico_std',
+                               'categoria',
+                               'sub_categoria',
+                               'eventos',
+                               'selecão',
+                               'otmu')
   
+  dsname_Rdata <- paste(tipo, "-", mun, "-", ano, ".Rdata",sep = "")
+  save(despesas_acum, file = dsname_Rdata) # grava resultado em formato RData
+ 
+  dsname_xlsx <- paste(tipo, "-", mun, "-", ano, ".xlsx",sep = "")
+ 
+  write_xlsx(despesas_acum, dsname_xlsx) #grava data frame em formato *.xlsx
   
-  save(despesas_acum, file = "Despesas_municipios.Rdata") # grava resultado em formato RData
-  
-  dsname <- "Despesas_municipios.xlsx" # Substituir DSN do arquivo de despesas a ser trabalhado 
-  
-  writexl::write_xlsx(despesas_acum, dsname) #grava data frame em formato *.xlsx
-  
-  std_histdesp(dsname) # cria campo histórico padronizado (sem acentuação)
-
-} # FUNÇÃO: download_despesas TCE
-
-# Função calcula digito do código IBGE de municípios
-cod_ibge_7dig <- function(codigo_mun_6dig) {
-  peso <- "1212120"
-  soma <- 0
-  
-  for (i in 1:6) {
-    valor <- as.integer(substr(codigo_mun_6dig, i, i)) * as.integer(substr(peso, i, i))
-    
-    if (valor > 9) {
-      soma <- soma + as.integer(substr(as.character(valor), 1, 1)) + as.integer(substr(as.character(valor), 2, 2))
-    } else {
-      soma <- soma + valor
-    }
-  }
-  
-  dv <- (10 - (soma %% 10)) # função %% - função módulo ou resto
-  
-  if ((soma %% 10) == 0) {
-    dv <- 0
-  }
-  codigo_mun_6dig <- paste(codigo_mun_6dig,dv, sep="")
-  return(codigo_mun_6dig)
-}
-
-# Função escala Min-Max (Normalização)
-f_minmax <- function(x) {
-    return((x - min(x))/(max(x)-min(x)))
-  }
-f_minmaxn <- function(x) {
-  return(1- (x - min(x))/(max(x)-min(x)) )
-}
-
-
-############################  Exemplo de execução das funções ############################### 
-
- configs()       # executa função configurações 
-# load_packages() # Executa a função carregar pacotes
-# download_receitas(anos, lista_municipios)
-# download_despesas(anos,lista_municipios)
+} # FUNÇÃO: Download Receitas do TCE  - municípios da lista_mun_minusculas
