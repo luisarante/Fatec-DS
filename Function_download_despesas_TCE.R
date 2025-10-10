@@ -1,13 +1,24 @@
 ############ Função Download Despesas do TCE  - municípios da lista_mun_minusculas ###########
 
 download_despesas <- function(anos_f, lista_municipios_f) {
+ 
+  library(dplyr)
+  library(readxl)
+  library(writexl)
+  library(stringr)
+ 
+  getwd()
   
- getwd()
-  
+ # anos_f             <- "2025"
+ # lista_municipios_f <- "ilhabela"
   
   tipo = "despesas"
-  despesas_acum <- read.csv(file = "despesas_vazia.csv", sep = ";", header = T, encoding = "latin1")
- 
+  
+  despesas_acum <- read.csv(file = "Orçamento_Publico/despesas_vazia.csv", 
+                            sep = ";", 
+                            header = TRUE,
+                            encoding = "latin1" )
+  
    # Opção para acumular as despesas baixadas em arquivo histórico
    # despesas_acum <- read_xlsx("Despesas-Ilhabela_2008-2022.xlsx") # opção para juntar base até 2022dados 
   
@@ -28,7 +39,7 @@ download_despesas <- function(anos_f, lista_municipios_f) {
       
       file.remove(df_name_zip)
       
-      file.remove(df_name_pasta)
+      # file.remove(df_name_pasta)
       
       despesas <- read.csv(file = df_name_csv, sep = ";", header = T, 
                            encoding = "latin1", dec = ",")
@@ -51,6 +62,8 @@ download_despesas <- function(anos_f, lista_municipios_f) {
       
     }  # Fim do loop de município  
   }  # Fim do loop de ano
+  
+  despesas_acum$historico_std <- std_str(despesas_acum$historico_despesa)  # cria campo histórico padronizado (sem acentuação)
   
   # colnames(despesas_acum) <- c('identificação da despesa detalhe',
   #                               'ano exercicio',
@@ -82,15 +95,12 @@ download_despesas <- function(anos_f, lista_municipios_f) {
   #                               'selecão',
   #                               'OTMU')
 
-  # save(despesas_acum, file = "Despesas_municipios.Rdata") # grava resultado em formato RData
   
-  dsname <- "Despesas_municipios.xlsx" # Substituir DSN do arquivo de despesas a ser trabalhado 
+  dsname_Rdata <- paste(tipo, "-", "municipios", "-", ano, ".Rdata",sep = "")
+  save(despesas_acum, file = dsname_Rdata) # grava resultado em formato RData
   
-  write_xlsx(despesas_acum, dsname) #grava data frame em formato *.xlsx
+  dsname_xlsx <- paste(tipo, "-", "municipios", "-", ano, ".xlsx",sep = "")
+  write_xlsx(despesas_acum, dsname_xlsx) #grava data frame em formato *.xlsx
   
-  std_histdesp(dsname) # cria campo histórico padronizado (sem acentuação)
+  } # FUNÇÃO: download_despesas TCE
   
-} # FUNÇÃO: download_despesas TCE
-  
-
-

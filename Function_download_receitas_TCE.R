@@ -4,8 +4,9 @@ download_receitas <- function(anos_f, lista_municipios_f) {
   
   library(readxl)
   library(writexl)
-  #anos_f             <- "2025"
-  #lista_municipios_f <- "ilhabela"
+  
+  # anos_f             <- "2025"
+  # lista_municipios_f <- "ilhabela"
   tipo                <- "receitas"
   diretorio           <- getwd()
   
@@ -74,7 +75,7 @@ download_receitas <- function(anos_f, lista_municipios_f) {
     )
   
   dsname_Rdata <- paste(tipo, "-", "municipios", "-", ano, ".Rdata",sep = "")
-  save(despesas_acum, file = dsname_Rdata) # grava resultado em formato RData
+  save(receitas_acum, file = dsname_Rdata) # grava resultado em formato RData
   
   dsname_xlsx <- paste(tipo, "-", "municipios", "-", ano, ".xlsx",sep = "")
   write_xlsx(receitas_acum, dsname_xlsx) #grava data frame em formato *.xlsx
