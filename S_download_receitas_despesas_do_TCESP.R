@@ -16,6 +16,8 @@ load_packages()
 lista_mun_rmvale <- read_xlsx("Tabelas/Municipios_RMVale.xlsx")  # 39 municipios da RM_Vale
 lista_mun_rmvale <- dplyr::filter(lista_mun_rmvale, SELECAO == "S")
 lista_municipios <- lista_mun_rmvale$nm_mun            # default = 39 municipios da rmvale
+#                      ou
+lista_municipios <- c("ilhabela", "sao-sebastiao", "caraguatatuba", "ubatuba")
 
 # anos <- readline(prompt = "Qual ano deseja baixar?: ")  # Opção: Digitar anos ou linha abaixo ou
 
