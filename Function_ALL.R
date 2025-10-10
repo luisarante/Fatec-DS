@@ -152,7 +152,7 @@ download_receitas <- function(anos_f, lista_municipios_f) {
       
       #remove arquivos temporários
       file.remove(df_name_zip)
-      file.remove(df_name_pasta)
+      # file.remove(df_name_pasta)
       
       receitas <- read.csv(file = df_name_csv, sep = ";", header = T, 
                            encoding = "latin1",dec = ",")
@@ -188,10 +188,10 @@ download_receitas <- function(anos_f, lista_municipios_f) {
       'Categoria'
     )
   	
-  dsname_Rdata <- paste(tipo, "-", mun, "-", ano, ".Rdata",sep = "")
+  dsname_Rdata <- paste(tipo, "-", "municipios", "-", ano, ".Rdata",sep = "")
   save(despesas_acum, file = dsname_Rdata) # grava resultado em formato RData
   
-  dsname_xlsx <- paste(tipo, "-", mun, "-", ano, ".xlsx",sep = "")
+  dsname_xlsx <- paste(tipo, "-", "municipios", "-", ano, ".xlsx",sep = "")
   write_xlsx(receitas_acum, dsname_xlsx) #grava data frame em formato *.xlsx
   
 } # FUNÇÃO download_receitas do TCE  - municípios da lista_mun_minusculas
@@ -304,10 +304,10 @@ download_despesas <- function(anos_f, lista_municipios_f) {
                                'selecão',
                                'otmu')
   
-  dsname_Rdata <- paste(tipo, "-", mun, "-", ano, ".Rdata",sep = "")
+  dsname_Rdata <- paste(tipo, "-", "municipios", "-", ano, ".Rdata",sep = "")
   save(despesas_acum, file = dsname_Rdata) # grava resultado em formato RData
  
-  dsname_xlsx <- paste(tipo, "-", mun, "-", ano, ".xlsx",sep = "")
+  dsname_xlsx <- paste(tipo, "-", "municipios", "-", ano, ".xlsx",sep = "")
  
   write_xlsx(despesas_acum, dsname_xlsx) #grava data frame em formato *.xlsx
   
